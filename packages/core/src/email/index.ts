@@ -111,3 +111,65 @@ export async function sendDigestToKindle(
     ],
   });
 }
+
+// ============================================================================
+// Tiered Digest Email (two EPUB attachments)
+// ============================================================================
+
+export interface DigestAttachments {
+  summaryEpub: Buffer;
+  summaryFilename: string;
+  fullArticlesEpub: Buffer;
+  fullArticlesFilename: string;
+}
+
+export interface DigestStats {
+  critical: number;
+  notable: number;
+  related: number;
+  fullArticles: number;
+}
+
+export async function sendTieredDigestToKindle(
+  attachments: DigestAttachments,
+  stats: DigestStats,
+  date: Date
+): Promise<SendEmailResult> {
+  const kindleEmails = parseKindleEmails();
+
+  if (kindleEmails.length === 0) {
+    throw new Error('No Kindle email addresses configured (KINDLE_EMAIL_TO)');
+  }
+
+  const dateStr = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'America/Denver',
+  });
+
+  const subject = `Kindle Digest - ${dateStr}`;
+  const text = `Your daily digest is attached.
+
+Summary: ${stats.critical} critical, ${stats.notable} notable, ${stats.related} related items
+Full Articles: ${stats.fullArticles} complete articles (critical tier only)
+
+Tip: Read the Summary first for an overview, then dive into Full Articles for details.`;
+
+  return sendEmail({
+    to: kindleEmails,
+    subject,
+    text,
+    attachments: [
+      {
+        filename: attachments.summaryFilename,
+        content: attachments.summaryEpub,
+      },
+      {
+        filename: attachments.fullArticlesFilename,
+        content: attachments.fullArticlesEpub,
+      },
+    ],
+  });
+}

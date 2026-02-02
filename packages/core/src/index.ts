@@ -28,13 +28,50 @@ export {
 export type { DigestInterests, InterestTopic, ScoredFeedItem } from './interests/index.js';
 
 // EPUB
-export { generateEpub, generateDigestFilename } from './epub/index.js';
-export type { EpubArticle, EpubOptions } from './epub/index.js';
+export {
+  generateEpub,
+  generateDigestFilename,
+  generateSummaryEpub,
+  generateFullArticlesEpub,
+  generateSummaryFilename,
+  generateFullArticlesFilename,
+} from './epub/index.js';
+export type { EpubArticle, EpubOptions, SummaryEpubOptions, FullArticlesEpubOptions } from './epub/index.js';
 
 // Email
 export {
   sendEmail,
   sendDigestToKindle,
+  sendTieredDigestToKindle,
   parseKindleEmails,
 } from './email/index.js';
-export type { EmailAttachment, SendEmailOptions, SendEmailResult } from './email/index.js';
+export type {
+  EmailAttachment,
+  SendEmailOptions,
+  SendEmailResult,
+  DigestAttachments,
+  DigestStats,
+} from './email/index.js';
+
+// LLM
+export {
+  getOpenAIClient,
+  getModel,
+  isLLMEnabled,
+  rankArticlesBatch,
+  applyFallbackRanking,
+  generateSummary,
+  generateSummariesBatch,
+  generateFallbackSummaries,
+  buildRankingPrompt,
+  buildSummaryPrompt,
+} from './llm/index.js';
+export type {
+  ArticleTier,
+  ArticleForRanking,
+  RankedArticle,
+  RankingBatchResponse,
+  SummaryResponse,
+  TieredDigestArticle,
+  ExtractedContent,
+} from './llm/index.js';

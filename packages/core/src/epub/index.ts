@@ -1,4 +1,5 @@
 import EPub from 'epub-gen-memory';
+import type { TieredDigestArticle } from '../llm/types.js';
 
 export interface EpubArticle {
   title: string;
@@ -211,4 +212,194 @@ export async function generateEpub(options: EpubOptions): Promise<Buffer> {
 export function generateDigestFilename(date: Date): string {
   const dateStr = date.toISOString().split('T')[0];
   return `kindle-digest-${dateStr}.epub`;
+}
+
+// ============================================================================
+// Summary EPUB Generation (tiered digest)
+// ============================================================================
+
+export interface SummaryEpubOptions {
+  title: string;
+  date: Date;
+  criticalArticles: TieredDigestArticle[];
+  notableArticles: TieredDigestArticle[];
+  relatedArticles: TieredDigestArticle[];
+}
+
+export interface FullArticlesEpubOptions {
+  title: string;
+  date: Date;
+  articles: EpubArticle[];
+}
+
+function generateSummaryCoverHtml(
+  title: string,
+  date: Date,
+  counts: { critical: number; notable: number; related: number }
+): string {
+  const formattedDate = formatDate(date);
+  return `
+    <div style="text-align: center; padding: 40px 20px; font-family: Georgia, serif;">
+      <h1 style="font-size: 2.5em; margin-bottom: 0.5em; color: #333;">${title}</h1>
+      <p style="font-size: 1.2em; color: #666; margin-bottom: 1em;">${formattedDate}</p>
+      <p style="font-size: 1em; color: #555;">Daily Summary</p>
+      <hr style="border: none; border-top: 2px solid #ccc; width: 50%; margin: 2em auto;" />
+      <div style="text-align: left; max-width: 300px; margin: 0 auto;">
+        <p style="margin: 0.5em 0;"><strong style="color: #c0392b;">${counts.critical}</strong> Critical Items</p>
+        <p style="margin: 0.5em 0;"><strong style="color: #d35400;">${counts.notable}</strong> Notable Updates</p>
+        <p style="margin: 0.5em 0;"><strong style="color: #7f8c8d;">${counts.related}</strong> Related Items</p>
+      </div>
+    </div>
+  `;
+}
+
+function generateCriticalSectionHtml(articles: TieredDigestArticle[]): string {
+  if (articles.length === 0) {
+    return '<p style="color: #888; font-style: italic;">No critical items today.</p>';
+  }
+
+  const items = articles
+    .map(
+      (article) => `
+    <article style="margin-bottom: 2em; padding-bottom: 1.5em; border-bottom: 1px solid #eee;">
+      <h3 style="font-size: 1.2em; margin-bottom: 0.5em; color: #c0392b;">
+        <a href="${article.url}" style="color: inherit; text-decoration: none;">${article.title}</a>
+      </h3>
+      <p style="font-size: 0.85em; color: #666; margin-bottom: 0.8em;">
+        ${article.siteName || 'Unknown'}${article.author ? ` • ${article.author}` : ''}
+      </p>
+      <p style="line-height: 1.6; color: #333;">${article.summary}</p>
+      <p style="font-size: 0.85em; margin-top: 0.8em;">
+        <a href="${article.url}" style="color: #0066cc;">Read full article</a>
+      </p>
+    </article>
+  `
+    )
+    .join('');
+
+  return `
+    <div style="font-family: Georgia, serif;">
+      <p style="font-size: 0.9em; color: #666; margin-bottom: 1.5em; font-style: italic;">
+        Breaking news and major developments that need your attention.
+      </p>
+      ${items}
+    </div>
+  `;
+}
+
+function generateNotableSectionHtml(articles: TieredDigestArticle[]): string {
+  if (articles.length === 0) {
+    return '<p style="color: #888; font-style: italic;">No notable items today.</p>';
+  }
+
+  const items = articles
+    .map(
+      (article) => `
+    <div style="margin-bottom: 1.5em; padding-left: 1em; border-left: 3px solid #d35400;">
+      <h4 style="font-size: 1.1em; margin-bottom: 0.3em;">
+        <a href="${article.url}" style="color: #333; text-decoration: none;">${article.title}</a>
+      </h4>
+      <p style="font-size: 0.85em; color: #666; margin-bottom: 0.5em;">${article.siteName || 'Unknown'}</p>
+      <p style="font-size: 0.95em; color: #444; line-height: 1.5;">${article.summary}</p>
+    </div>
+  `
+    )
+    .join('');
+
+  return `
+    <div style="font-family: Georgia, serif;">
+      <p style="font-size: 0.9em; color: #666; margin-bottom: 1.5em; font-style: italic;">
+        Important updates worth knowing about.
+      </p>
+      ${items}
+    </div>
+  `;
+}
+
+function generateRelatedSectionHtml(articles: TieredDigestArticle[]): string {
+  if (articles.length === 0) {
+    return '<p style="color: #888; font-style: italic;">No related items today.</p>';
+  }
+
+  const items = articles
+    .map(
+      (article) => `
+    <li style="margin-bottom: 0.6em;">
+      <a href="${article.url}" style="color: #333; text-decoration: none;">${article.oneLiner || article.title}</a>
+      <span style="color: #888; font-size: 0.85em;"> — ${article.siteName || 'Unknown'}</span>
+    </li>
+  `
+    )
+    .join('');
+
+  return `
+    <div style="font-family: Georgia, serif;">
+      <p style="font-size: 0.9em; color: #666; margin-bottom: 1em; font-style: italic;">
+        Quick mentions you might find interesting.
+      </p>
+      <ul style="list-style: none; padding: 0; margin: 0;">
+        ${items}
+      </ul>
+    </div>
+  `;
+}
+
+export async function generateSummaryEpub(options: SummaryEpubOptions): Promise<Buffer> {
+  const { title, date, criticalArticles, notableArticles, relatedArticles } = options;
+
+  const chapters = [
+    {
+      title: 'Cover',
+      content: generateSummaryCoverHtml(title, date, {
+        critical: criticalArticles.length,
+        notable: notableArticles.length,
+        related: relatedArticles.length,
+      }),
+    },
+    {
+      title: 'Critical News',
+      content: generateCriticalSectionHtml(criticalArticles),
+    },
+    {
+      title: 'Notable Updates',
+      content: generateNotableSectionHtml(notableArticles),
+    },
+    {
+      title: 'Related Items',
+      content: generateRelatedSectionHtml(relatedArticles),
+    },
+  ];
+
+  const epub = await EPub(
+    {
+      title: `${title} - Summary`,
+      author: 'Kindle Assist',
+      publisher: 'Kindle Assist',
+      date: date.toISOString(),
+      css: EPUB_CSS,
+      tocTitle: 'Contents',
+      appendChapterTitles: true,
+    },
+    chapters
+  );
+
+  return Buffer.from(epub);
+}
+
+export async function generateFullArticlesEpub(options: FullArticlesEpubOptions): Promise<Buffer> {
+  return generateEpub({
+    title: `${options.title} - Full Articles`,
+    date: options.date,
+    articles: options.articles,
+  });
+}
+
+export function generateSummaryFilename(date: Date): string {
+  const dateStr = date.toISOString().split('T')[0];
+  return `kindle-digest-summary-${dateStr}.epub`;
+}
+
+export function generateFullArticlesFilename(date: Date): string {
+  const dateStr = date.toISOString().split('T')[0];
+  return `kindle-digest-full-${dateStr}.epub`;
 }
