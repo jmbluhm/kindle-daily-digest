@@ -1,0 +1,44 @@
+{
+  "name": "@kindle-assist/core",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./db": "./dist/db/index.js",
+    "./extraction": "./dist/extraction/index.js",
+    "./rss": "./dist/rss/index.js",
+    "./epub": "./dist/epub/index.js",
+    "./email": "./dist/email/index.js",
+    "./interests": "./dist/interests/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "6.5.0",
+    "jsdom": "^25.0.0",
+    "@mozilla/readability": "^0.5.0",
+    "rss-parser": "^3.13.0",
+    "epub-gen-memory": "^1.0.10",
+    "resend": "^4.0.0",
+    "undici": "^7.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.0",
+    "prisma": "6.5.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "prisma": {
+    "schema": "../../prisma/schema.prisma"
+  }
+}

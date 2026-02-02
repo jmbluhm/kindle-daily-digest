@@ -1,0 +1,36 @@
+{
+  "name": "kindle-assist",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @kindle-assist/api dev",
+    "build": "pnpm -r build",
+    "cron:run": "pnpm --filter @kindle-assist/cron start",
+    "db:migrate": "pnpm --filter @kindle-assist/core db:migrate",
+    "db:migrate:deploy": "pnpm --filter @kindle-assist/core db:migrate:deploy",
+    "db:seed": "pnpm --filter @kindle-assist/core db:seed",
+    "db:generate": "pnpm --filter @kindle-assist/core db:generate",
+    "db:studio": "pnpm --filter @kindle-assist/core db:studio",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@prisma/client": "6.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^20.11.0",
+    "eslint": "^9.0.0",
+    "prisma": "6.5.0",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}
